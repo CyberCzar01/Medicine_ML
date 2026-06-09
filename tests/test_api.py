@@ -47,6 +47,16 @@ def test_predict_minimal():
     assert "disclaimers" in body
 
 
+def test_predict_rejects_absurd_values():
+    r = client.post("/predict", json={"temp": 384})
+    assert r.status_code == 422
+
+
+def test_batch_empty_rejected():
+    r = client.post("/predict/batch", json={"patients": []})
+    assert r.status_code == 422
+
+
 def test_predict_batch():
     r = client.post("/predict/batch", json={"patients": [
         {"creatinine": 156, "imaging_text": "гидронефроз"},

@@ -1,4 +1,6 @@
+import logging
 import math
+import threading
 
 import pandas as pd
 import joblib
@@ -8,7 +10,6 @@ from urotriage.config import (
     ML_FEATURES,
     MODEL_PATH,
     RULE_VERSION,
-    MODEL_VERSION,
     THRESHOLD_VERSION,
     SCHEMA_VERSION,
     DISCLAIMERS,
@@ -17,8 +18,11 @@ from urotriage.features import build_feature_frame
 from urotriage.rule import evaluate_rule
 from urotriage.explain import explain_patient
 
+_log = logging.getLogger("urotriage.service")
+
 _ARTIFACT = None
 _ARTIFACT_LOADED = False
+_ARTIFACT_LOCK = threading.Lock()
 
 _API_TO_SURVEY = {
     "age": "age",
@@ -41,27 +45,32 @@ def load_artifact(force=False):
     global _ARTIFACT, _ARTIFACT_LOADED
     if _ARTIFACT_LOADED and not force:
         return _ARTIFACT
-    if MODEL_PATH.exists():
-        _ARTIFACT = joblib.load(MODEL_PATH)
-    else:
-        _ARTIFACT = None
-    _ARTIFACT_LOADED = True
-    return _ARTIFACT
+    with _ARTIFACT_LOCK:
+        if _ARTIFACT_LOADED and not force:
+            return _ARTIFACT
+        artifact = None
+        if MODEL_PATH.exists():
+            try:
+                artifact = joblib.load(MODEL_PATH)
+            except Exception:
+                _log.exception(
+                    "Не удалось загрузить ML-модель из %s; сервис работает только на правиле", MODEL_PATH
+                )
+        _ARTIFACT = artifact
+        _ARTIFACT_LOADED = True
+        return _ARTIFACT
 
 
 def model_loaded():
     return load_artifact() is not None
 
 
-def _survey_row(patient):
-    row = {}
-    for api_key, survey_key in _API_TO_SURVEY.items():
-        row[survey_key] = patient.get(api_key)
-    return pd.DataFrame([row])
-
-
-def _ml_features(patient):
-    frame = build_feature_frame(_survey_row(patient), source="survey", include_target=False)
+def _ml_features(patients):
+    rows = [
+        {survey_key: p.get(api_key) for api_key, survey_key in _API_TO_SURVEY.items()}
+        for p in patients
+    ]
+    frame = build_feature_frame(pd.DataFrame(rows), source="survey", include_target=False)
     return frame.reindex(columns=ML_FEATURES)
 
 
@@ -84,30 +93,27 @@ def versions():
     }
 
 
-def predict(patient):
-    rule_result = evaluate_rule(patient)
+def _rule_only_response(rule_result, vers):
     rule_zone = rule_result["zone"]
-    artifact = load_artifact()
+    return {
+        "final_zone": rule_zone,
+        "final_reason": f"rule_{rule_zone}",
+        "rule": rule_result,
+        "ml": {
+            "probability": None,
+            "proxy_zone": None,
+            "action": "model_unavailable",
+            "message": "ML-модель не загружена; зона определена только правилом.",
+            "top_features": [],
+            "explanations_available": False,
+        },
+        "versions": vers,
+        "disclaimers": DISCLAIMERS,
+    }
 
-    if artifact is None:
-        return {
-            "final_zone": rule_zone,
-            "final_reason": f"rule_{rule_zone}",
-            "rule": rule_result,
-            "ml": {
-                "probability": None,
-                "proxy_zone": None,
-                "action": "model_unavailable",
-                "message": "ML-модель не загружена; зона определена только правилом.",
-                "top_features": [],
-                "explanations_available": False,
-            },
-            "versions": versions(),
-            "disclaimers": DISCLAIMERS,
-        }
 
-    X = _ml_features(patient)
-    probability = float(artifact["calibrated"].predict_proba(X)[:, 1][0])
+def _ml_response(rule_result, feature_row, probability, artifact, vers):
+    rule_zone = rule_result["zone"]
     threshold = float(artifact["green_upgrade_threshold"])
     proxy_zone = "high" if probability >= threshold else "low"
 
@@ -122,7 +128,7 @@ def predict(patient):
         action = "none"
         message = "ML согласуется с правилом или зона определена правилом."
 
-    feature_values = {k: _clean_value(v) for k, v in X.iloc[0].to_dict().items()}
+    feature_values = {k: _clean_value(v) for k, v in feature_row.to_dict().items()}
     top_features = explain_patient(artifact["feature_importances"], feature_values)
 
     return {
@@ -137,10 +143,26 @@ def predict(patient):
             "top_features": top_features,
             "explanations_available": True,
         },
-        "versions": versions(),
+        "versions": vers,
         "disclaimers": DISCLAIMERS,
     }
 
 
+def predict(patient):
+    return predict_batch([patient])[0]
+
+
 def predict_batch(patients):
-    return [predict(p) for p in patients]
+    if not patients:
+        return []
+    rule_results = [evaluate_rule(p) for p in patients]
+    artifact = load_artifact()
+    vers = versions()
+    if artifact is None:
+        return [_rule_only_response(r, vers) for r in rule_results]
+    X = _ml_features(patients)
+    probabilities = artifact["calibrated"].predict_proba(X)[:, 1]
+    return [
+        _ml_response(rule_results[i], X.iloc[i], float(probabilities[i]), artifact, vers)
+        for i in range(len(patients))
+    ]

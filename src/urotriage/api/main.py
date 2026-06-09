@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,6 +15,13 @@ from urotriage.api.schemas import (
     SchemaResponse,
 )
 
+
+@asynccontextmanager
+async def lifespan(_app):
+    service.load_artifact()
+    yield
+
+
 app = FastAPI(
     title="Urotriage API",
     version="4.0.0",
@@ -21,6 +30,7 @@ app = FastAPI(
         "Зона определяется прозрачным клиническим правилом; ML — вспомогательный "
         "детектор скрытого риска (может только повысить green до yellow)."
     ),
+    lifespan=lifespan,
 )
 
 app.add_middleware(

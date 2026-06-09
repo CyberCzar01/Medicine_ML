@@ -54,6 +54,30 @@ def test_yellow_low_grade_fever():
     assert "low_grade_fever" in codes(r)
 
 
+def test_yellow_isolated_high_fever_normal_markers():
+    r = evaluate_rule({"creatinine": 90, "temperature": 39.0, "crp": 5, "wbc": 7, "imaging_text": "норма"})
+    assert r["zone"] == "yellow"
+    assert "isolated_fever" in codes(r)
+    assert "infection_systemic" not in codes(r)
+
+
+def test_yellow_isolated_high_fever_missing_markers():
+    r = evaluate_rule({"creatinine": 90, "temperature": 38.5, "imaging_text": "норма"})
+    assert r["zone"] == "yellow"
+    assert "isolated_fever" in codes(r)
+
+
+def test_yellow_fever_gap_between_subfebrile_and_red():
+    r = evaluate_rule({"creatinine": 90, "temperature": 37.95, "crp": 5, "wbc": 7, "imaging_text": "норма"})
+    assert r["zone"] == "yellow"
+    assert "low_grade_fever" in codes(r)
+
+
+def test_red_infection_no_extra_fever_flag():
+    r = evaluate_rule({"temperature": 38.6, "crp": 120, "wbc": 16, "creatinine": 90, "imaging_text": "норма"})
+    assert "isolated_fever" not in codes(r)
+
+
 def test_yellow_critical_incomplete():
     r = evaluate_rule({"diagnosis_text": "Острая задержка мочи"})
     assert r["zone"] == "yellow"
@@ -93,6 +117,13 @@ def test_negated_hematuria_not_red():
 def test_negated_hydronephrosis_not_red():
     r = evaluate_rule({"creatinine": 90, "temperature": 36.6, "crp": 5, "wbc": 7, "imaging_text": "без гидронефроза, обструкции нет"})
     assert "hydronephrosis" not in codes(r)
+
+
+def test_negation_not_triggered_inside_words():
+    r = evaluate_rule({"creatinine": 90, "temperature": 36.6, "crp": 5, "wbc": 7,
+                       "imaging_text": "осмотр в кабинете: двусторонний гидронефроз"})
+    assert r["zone"] == "red"
+    assert "hydronephrosis" in codes(r)
 
 
 def test_infection_dx_with_marker_no_fever_is_red():

@@ -4,21 +4,21 @@ from pydantic import BaseModel, Field
 
 
 class PatientInput(BaseModel):
-    age: Optional[float] = Field(None, description="Возраст, лет")
-    sex: Optional[str] = Field(None, description="Пол: Мужской/Женский или 1/0")
-    temp: Optional[float] = Field(None, description="Температура тела, °C")
-    bp_sys: Optional[float] = Field(None, description="Систолическое АД, мм рт. ст.")
-    bp_dia: Optional[float] = Field(None, description="Диастолическое АД, мм рт. ст.")
-    pulse: Optional[float] = Field(None, description="Пульс, уд/мин")
-    creatinine: Optional[float] = Field(None, description="Креатинин крови, мкмоль/л")
-    urea: Optional[float] = Field(None, description="Мочевина крови, ммоль/л")
-    crp: Optional[float] = Field(None, description="С-реактивный белок, мг/л")
-    hemoglobin: Optional[float] = Field(None, description="Гемоглобин, г/л")
-    wbc: Optional[float] = Field(None, description="Лейкоциты крови, ×10⁹/л")
-    residual_urine_ml: Optional[float] = Field(None, description="Объём остаточной мочи по УЗИ, мл")
-    diagnosis_text: Optional[str] = Field(None, description="Диагноз при поступлении (свободный текст)")
-    complaints_text: Optional[str] = Field(None, description="Жалобы при поступлении (свободный текст)")
-    imaging_text: Optional[str] = Field(None, description="Заключения УЗИ/КТ (свободный текст)")
+    age: Optional[float] = Field(None, ge=0, le=130, description="Возраст, лет")
+    sex: Optional[str] = Field(None, max_length=20, description="Пол: Мужской/Женский или 1/0")
+    temp: Optional[float] = Field(None, ge=25, le=45, description="Температура тела, °C")
+    bp_sys: Optional[float] = Field(None, ge=20, le=300, description="Систолическое АД, мм рт. ст.")
+    bp_dia: Optional[float] = Field(None, ge=10, le=200, description="Диастолическое АД, мм рт. ст.")
+    pulse: Optional[float] = Field(None, ge=10, le=300, description="Пульс, уд/мин")
+    creatinine: Optional[float] = Field(None, ge=0, le=5000, description="Креатинин крови, мкмоль/л")
+    urea: Optional[float] = Field(None, ge=0, le=200, description="Мочевина крови, ммоль/л")
+    crp: Optional[float] = Field(None, ge=0, le=1000, description="С-реактивный белок, мг/л")
+    hemoglobin: Optional[float] = Field(None, ge=10, le=250, description="Гемоглобин, г/л")
+    wbc: Optional[float] = Field(None, ge=0, le=200, description="Лейкоциты крови, ×10⁹/л")
+    residual_urine_ml: Optional[float] = Field(None, ge=0, le=5000, description="Объём остаточной мочи по УЗИ, мл")
+    diagnosis_text: Optional[str] = Field(None, max_length=20000, description="Диагноз при поступлении (свободный текст)")
+    complaints_text: Optional[str] = Field(None, max_length=20000, description="Жалобы при поступлении (свободный текст)")
+    imaging_text: Optional[str] = Field(None, max_length=20000, description="Заключения УЗИ/КТ (свободный текст)")
 
     model_config = {
         "json_schema_extra": {
@@ -93,7 +93,10 @@ class PredictResponse(BaseModel):
 
 
 class BatchRequest(BaseModel):
-    patients: List[PatientInput] = Field(..., description="Список пациентов для пакетной оценки")
+    patients: List[PatientInput] = Field(
+        ..., min_length=1, max_length=500,
+        description="Список пациентов для пакетной оценки (от 1 до 500 за запрос)",
+    )
 
 
 class BatchResponse(BaseModel):
