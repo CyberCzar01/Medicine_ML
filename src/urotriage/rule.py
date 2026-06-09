@@ -9,7 +9,7 @@ from urotriage.config import (
 
 _retention_re = re.compile(COHORT_RETENTION_RE)
 _patterns = {k: re.compile(v) for k, v in P.items()}
-_negation_re = re.compile(r"нет|без|не выявл|не отмеч|отрицает|исключен|не определ|не обнаруж|не наблюд")
+_negation_re = re.compile(r"\bнет\b|\bбез\b|\bне выявл|\bне отмеч|\bотрицает|\bисключен|\bне определ|\bне обнаруж|\bне наблюд")
 
 _NEGATION_WINDOW = 28
 
@@ -75,7 +75,8 @@ def evaluate_rule(patient):
     inflammatory = (crp is not None and crp > T["crp_red"]) or (wbc is not None and wbc > T["wbc_red"])
     febrile = temp is not None and temp >= T["temp_red"]
     infection_dx = _has("infection_dx", diagnosis)
-    if (febrile and inflammatory) or (infection_dx and (febrile or inflammatory)):
+    infection_red = (febrile and inflammatory) or (infection_dx and (febrile or inflammatory))
+    if infection_red:
         red.append(_c("infection_systemic", "red", "Системная инфекция: лихорадка и/или воспалительные маркеры (возможен уросепсис/пиелонефрит)"))
 
     hematuria_any = _has("hematuria_any", clinical, imaging)
@@ -91,7 +92,10 @@ def evaluate_rule(patient):
     if _has("hydronephrosis_yellow", imaging, diagnosis) and not hydronephrosis_red:
         yellow.append(_c("pyeloectasia", "yellow", "Пиелоэктазия/расширение ЧЛС без явного гидронефроза"))
 
-    if temp is not None and T["temp_yellow_low"] <= temp <= T["temp_yellow_high"]:
+    if febrile and not infection_red:
+        yellow.append(_c("isolated_fever", "yellow",
+                         f"Лихорадка {temp:.1f} ≥ {T['temp_red']:.1f} без подтверждённых воспалительных маркеров — исключить инфекцию, дообследовать"))
+    elif temp is not None and T["temp_yellow_low"] <= temp < T["temp_red"]:
         yellow.append(_c("low_grade_fever", "yellow", f"Субфебрильная температура {temp:.1f}"))
 
     if _has("severe_pain", clinical):

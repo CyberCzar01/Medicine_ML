@@ -57,7 +57,6 @@ RULE_THRESHOLDS = {
     "urea_red": 20.0,
     "temp_red": 38.0,
     "temp_yellow_low": 37.5,
-    "temp_yellow_high": 37.9,
     "crp_red": 50.0,
     "wbc_red": 12.0,
     "hemoglobin_anemia": 90.0,

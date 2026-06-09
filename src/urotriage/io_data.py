@@ -3,8 +3,16 @@ import pandas as pd
 from urotriage.config import RAW_XLSX, CACHE_PKL, DATA_DIR
 
 
+def _cache_fresh():
+    if not CACHE_PKL.exists():
+        return False
+    if not RAW_XLSX.exists():
+        return True
+    return CACHE_PKL.stat().st_mtime >= RAW_XLSX.stat().st_mtime
+
+
 def load_raw(use_cache=True):
-    if use_cache and CACHE_PKL.exists():
+    if use_cache and _cache_fresh():
         return pd.read_pickle(CACHE_PKL)
     if not RAW_XLSX.exists():
         raise FileNotFoundError(
