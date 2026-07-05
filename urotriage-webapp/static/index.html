@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f4c81">
+<title>УроТриаж</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-title">
+    <span class="logo-dot"></span>
+    <div>
+      <h1>УроТриаж</h1>
+      <p>ОЗМ · ДГПЖ · Боткинская больница</p>
+    </div>
+  </div>
+  <div id="live-zone" class="zone-chip zone-none">—</div>
+</header>
+
+<div id="offline-banner" class="offline-banner hidden"></div>
+
+<main id="view-new" class="view">
+  <form id="patient-form" autocomplete="off">
+
+    <section class="card">
+      <h2>Поступление</h2>
+      <label class="field req">
+        <span>№ истории болезни</span>
+        <input type="text" name="case_id" placeholder="Например: 91-2026-С" required>
+      </label>
+      <label class="field">
+        <span>Дата и время поступления</span>
+        <input type="datetime-local" name="admitted_at">
+      </label>
+      <div class="row2">
+        <label class="field">
+          <span>Возраст, лет</span>
+          <input type="text" inputmode="numeric" name="age" placeholder="—">
+        </label>
+        <div class="field">
+          <span>Время от начала задержки</span>
+          <div class="seg" data-name="onset_category">
+            <button type="button" data-value="lt6">&lt;6 ч</button>
+            <button type="button" data-value="6to24">6–24 ч</button>
+            <button type="button" data-value="gt24">&gt;24 ч</button>
+            <button type="button" data-value="unknown">?</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Жалобы и диагноз</h2>
+      <div class="chips" data-name="complaints_flags">
+        <button type="button" data-value="no_voiding">Не мочится</button>
+        <button type="button" data-value="suprapubic_pain">Боль над лоном</button>
+        <button type="button" data-value="severe_pain">Выраженная боль</button>
+        <button type="button" data-value="urge">Императивные позывы</button>
+        <button type="button" data-value="fever_chills">Лихорадка / озноб</button>
+        <button type="button" data-value="gross_hematuria">Макрогематурия</button>
+        <button type="button" data-value="blood_clots">Сгустки крови</button>
+        <button type="button" data-value="weakness">Слабость</button>
+      </div>
+      <label class="field">
+        <span>Жалобы — дополнение (свободный текст)</span>
+        <textarea name="complaints_text" rows="2" placeholder="Необязательно"></textarea>
+      </label>
+      <label class="field">
+        <span>Диагноз при поступлении</span>
+        <textarea name="diagnosis_text" rows="2" placeholder="Например: ОЗМ на фоне ДГПЖ"></textarea>
+      </label>
+      <div class="chips" id="dx-quick">
+        <button type="button" data-text="Острая задержка мочи на фоне ДГПЖ">+ ОЗМ на фоне ДГПЖ</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Анамнез</h2>
+      <div class="row2">
+        <label class="field">
+          <span>ДГПЖ, лет</span>
+          <input type="text" inputmode="decimal" name="disease_duration_years" placeholder="—">
+        </label>
+        <label class="field">
+          <span>ПСА, нг/мл</span>
+          <input type="text" inputmode="decimal" name="psa" placeholder="—">
+        </label>
+      </div>
+      <div class="field">
+        <span>ОЗМ ранее</span>
+        <div class="seg" data-name="prior_ozm_count">
+          <button type="button" data-value="0">Впервые</button>
+          <button type="button" data-value="1">1 раз</button>
+          <button type="button" data-value="2">2 и более</button>
+        </div>
+      </div>
+      <div class="tristate-list">
+        <div class="tristate" data-name="prior_residual"><span>Остаточная моча ранее</span><div class="seg small"><button type="button" data-value="false">Нет</button><button type="button" data-value="true">Да</button></div></div>
+        <div class="tristate" data-name="bladder_stones"><span>Камни мочевого пузыря</span><div class="seg small"><button type="button" data-value="false">Нет</button><button type="button" data-value="true">Да</button></div></div>
+        <div class="tristate" data-name="prior_prostate_surgery"><span>Операции на простате ранее</span><div class="seg small"><button type="button" data-value="false">Нет</button><button type="button" data-value="true">Да</button></div></div>
+        <div class="tristate" data-name="alpha_blockers"><span>Альфа-адреноблокаторы</span><div class="seg small"><button type="button" data-value="false">Нет</button><button type="button" data-value="true">Да</button></div></div>
+        <div class="tristate" data-name="reductase_inhibitors"><span>Ингибиторы 5-АР</span><div class="seg small"><button type="button" data-value="false">Нет</button><button type="button" data-value="true">Да</button></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Объективно</h2>
+      <div class="row2">
+        <label class="field">
+          <span>Температура, °C</span>
+          <input type="text" inputmode="decimal" name="temp" placeholder="36.6">
+        </label>
+        <label class="field">
+          <span>Пульс, уд/мин</span>
+          <input type="text" inputmode="numeric" name="pulse" placeholder="—">
+        </label>
+      </div>
+      <div class="row2">
+        <label class="field">
+          <span>АД систолическое</span>
+          <input type="text" inputmode="numeric" name="bp_sys" placeholder="—">
+        </label>
+        <label class="field">
+          <span>АД диастолическое</span>
+          <input type="text" inputmode="numeric" name="bp_dia" placeholder="—">
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Лаборатория</h2>
+      <div class="row2">
+        <label class="field">
+          <span>Лейкоциты, ×10⁹/л</span>
+          <input type="text" inputmode="decimal" name="wbc" placeholder="—">
+        </label>
+        <label class="field">
+          <span>Гемоглобин, г/л</span>
+          <input type="text" inputmode="decimal" name="hemoglobin" placeholder="—">
+        </label>
+      </div>
+      <div class="row2">
+        <label class="field">
+          <span>Креатинин, мкмоль/л</span>
+          <input type="text" inputmode="decimal" name="creatinine" placeholder="—">
+        </label>
+        <label class="field">
+          <span>Мочевина, ммоль/л</span>
+          <input type="text" inputmode="decimal" name="urea" placeholder="—">
+        </label>
+      </div>
+      <div class="row2">
+        <label class="field">
+          <span>СРБ, мг/л</span>
+          <input type="text" inputmode="decimal" name="crp" placeholder="—">
+        </label>
+        <label class="field">
+          <span>ПКТ, нг/мл</span>
+          <input type="text" inputmode="decimal" name="pct" placeholder="—">
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>УЗИ / визуализация</h2>
+      <div class="row2">
+        <label class="field">
+          <span>Объём простаты, см³</span>
+          <input type="text" inputmode="decimal" name="prostate_vol" placeholder="—">
+        </label>
+        <label class="field">
+          <span>Остаточная моча / эвакуировано, мл</span>
+          <input type="text" inputmode="numeric" name="residual_urine_ml" placeholder="—">
+        </label>
+      </div>
+      <div class="tristate" data-name="median_lobe"><span>Средняя доля</span><div class="seg small"><button type="button" data-value="false">Нет</button><button type="button" data-value="true">Да</button></div></div>
+      <label class="field" id="median-lobe-size-field" style="display:none">
+        <span>Размер средней доли, мм</span>
+        <input type="text" inputmode="decimal" name="median_lobe_size" placeholder="—">
+      </label>
+      <div class="field">
+        <span>Гидронефроз / верхние мочевые пути</span>
+        <div class="seg wrap" data-name="hydronephrosis">
+          <button type="button" data-value="none">Нет</button>
+          <button type="button" data-value="pyeloectasia">Пиелоэктазия</button>
+          <button type="button" data-value="unilateral">Односторонний</button>
+          <button type="button" data-value="bilateral">Двусторонний</button>
+        </div>
+      </div>
+      <label class="field">
+        <span>Заключение УЗИ/КТ — дополнение</span>
+        <textarea name="imaging_text" rows="2" placeholder="Необязательно"></textarea>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Дренирование</h2>
+      <div class="field">
+        <span>Метод</span>
+        <div class="seg wrap" data-name="drainage_method">
+          <button type="button" data-value="urethral">Уретральный катетер</button>
+          <button type="button" data-value="cystostomy">Цистостомия</button>
+          <button type="button" data-value="trocar">Троакарная</button>
+          <button type="button" data-value="none">Не потребовалось</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>Катетеризация</span>
+        <div class="seg wrap" data-name="catheter_attempt">
+          <button type="button" data-value="first_try">С первой попытки</button>
+          <button type="button" data-value="difficult">С трудностями</button>
+          <button type="button" data-value="failed" class="danger-opt">Не удалась</button>
+        </div>
+      </div>
+    </section>
+
+  </form>
+  <div class="save-spacer"></div>
+</main>
+
+<main id="view-list" class="view hidden">
+  <div class="list-controls card">
+    <input type="search" id="search-input" placeholder="Поиск по № истории болезни">
+    <div class="chips filters" id="list-filters">
+      <button type="button" data-filter="all" class="on">Все</button>
+      <button type="button" data-filter="no-outcome">Без исхода</button>
+      <button type="button" data-filter="red">Красные</button>
+      <button type="button" data-filter="yellow">Жёлтые</button>
+      <button type="button" data-filter="green">Зелёные</button>
+    </div>
+  </div>
+  <div id="records-list"></div>
+</main>
+
+<main id="view-detail" class="view hidden">
+  <button type="button" class="back-btn" id="back-to-list">← К списку</button>
+  <div id="detail-content"></div>
+</main>
+
+<main id="view-stats" class="view hidden">
+  <div id="stats-cards" class="stats-grid"></div>
+  <section class="card">
+    <h2>Экспорт</h2>
+    <p class="muted">Все записи в формате анкеты (Excel).</p>
+    <a class="btn secondary" href="/api/export.xlsx" download>Скачать Excel</a>
+  </section>
+  <section class="card">
+    <h2>Врач</h2>
+    <p class="muted">Подпись для новых записей на этом устройстве.</p>
+    <input type="text" id="doctor-name" placeholder="Фамилия И. О.">
+  </section>
+  <section class="card">
+    <h2>Состояние системы</h2>
+    <div id="health-info" class="muted">Проверка…</div>
+  </section>
+</main>
+
+<div class="save-bar" id="save-bar">
+  <button type="button" class="btn primary" id="save-btn">Сохранить пациента</button>
+</div>
+
+<nav class="bottombar">
+  <button type="button" data-view="new" class="nav-btn on">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+    <span>Новый</span>
+  </button>
+  <button type="button" data-view="list" class="nav-btn">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+    <span>Пациенты</span>
+  </button>
+  <button type="button" data-view="stats" class="nav-btn">
+    <svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+    <span>Сводка</span>
+  </button>
+</nav>
+
+<div id="result-modal" class="modal hidden">
+  <div class="modal-body" id="result-body"></div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
